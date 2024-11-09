@@ -952,7 +952,8 @@ function plot_kspace(seq::Sequence; width=nothing, height=nothing, darkmode=fals
         mode="lines",
         line=attr(; color=c),
         name="Trajectory",
-        hoverinfo="skip",
+        #hoverinfo="skip",
+        hovertemplate="(%{x:.4f} ms, %{y:.2f} mT/m)",
     )
     p[2] = scatter3d(;
         x=kspace_adc[:, 1],
