@@ -1,3 +1,5 @@
+using Enzyme
+
 """Stores preallocated structs for use in Bloch CPU run_spin_precession! and run_spin_excitation! functions."""
 struct BlochCPUPrealloc{T} <: PreallocResult{T}
     M::Mag{T}                               # Mag{T}
@@ -79,6 +81,34 @@ function run_spin_precession!(
         x, y, z = get_spin_coords(p.motion, p.x, p.y, p.z, seq.t[seq_idx])
         t_seq += seq.Δt[seq_idx-1]
 
+        #println("Here:", individual_dynamics(x[1], y[1], z[1], t_seq, seq.Δt[seq_idx-1],seq.Gx[seq_idx], seq.Gy[seq_idx], seq.Gz[seq_idx], ΔBz[1], Bz_old[1], Bz_new[1], length(seq.ADC), seq.ADC[seq_idx], p.T2[1], ϕ[1], seq_idx, M.xy[1]))
+        
+        println("x:", x)
+        println("y:", y)
+        println("z:", z)
+        println("t_seq:", t_seq)
+        println("seq.Δt:", seq.Δt[seq_idx-1])
+        println("seq.Gx:", seq.Gx[seq_idx])
+        println("seq.Gy:", seq.Gy[seq_idx])
+        println("seq.Gz:", seq.Gz[seq_idx])
+        println("ΔBz:", ΔBz)
+        println("Bz_old:", Bz_old)
+        println("Bz_new:", Bz_new)
+        println("length(seq.ADC):", length(seq.ADC))
+        println("seq_ADC", seq.ADC)
+        println("seq_idx", seq_idx)
+        #println("seq.ADC[seq_idx]:", seq.ADC[seq_idx])
+        println("p.T2:", p.T2)
+        println("ϕ:", ϕ)
+        println("seq_idx:", seq_idx)
+        println("Mxy:", M.xy)
+
+        # temp = autodiff(Reverse, individual_dynamics, Const(x[1]), Const(y[1]), Const(z[1]), Const(t_seq), Const(seq.Δt[seq_idx-1]), Const(seq.Gx[seq_idx]), Const(seq.Gy[seq_idx]), Const(seq.Gz[seq_idx]), Const(ΔBz[1]), Const(Bz_old[1]), Const(Bz_new[1]), Const(length(seq.ADC)), Const(seq.ADC[seq_idx]), Active(p.T2[1]), Const(ϕ[1]), Const(seq_idx), Const(real.(M.xy[1])))
+
+        # println(temp)
+    #autodiff(Reverse, h, Active, Active(0.1), Const(0.1), Const("no"))
+    #Reset Spin-State (Magnetization). Only for FlowPath
+
         #Effective Field
         @. Bz_new = x * seq.Gx[seq_idx] + y * seq.Gy[seq_idx] + z * seq.Gz[seq_idx] + ΔBz
         
@@ -103,10 +133,29 @@ function run_spin_precession!(
     @. M.xy = M.xy * exp(-t_seq / p.T2) * cis(ϕ)
     @. M.z = M.z * exp(-t_seq / p.T1) + p.ρ * (T(1) - exp(-t_seq / p.T1))
     
-    #Reset Spin-State (Magnetization). Only for FlowPath
+    
     outflow_spin_reset!(M,  seq.t', p.motion; replace_by=p.ρ)
 
     return nothing
+end
+
+function individual_dynamics(x, y, z, t_seq, Δt_1, Gx, Gy, Gz, ΔBz, Bz_old, Bz_new, len_seq_ADC, seq_ADC_idx, T2, ϕ, seq_idx, Mxy0)
+
+    #Effective Field
+    Bz_new = x * Gx + y * Gy + z * Gz + ΔBz;
+    println(Bz_new)
+    #Rotation
+    # ϕ += (Bz_old + Bz_new) * Real(-π * γ) * Δt_1;
+
+    # #Acquired Signal
+    # if seq_idx <= len_seq_ADC && seq_ADC_idx
+    #     Mxy = exp(-t_seq / T2) * Mxy0 * cis(ϕ);
+    #     result = sum(Mxy)
+    # else
+    #     result = 0
+    # end
+    # println("AA")
+    #return Bz_new
 end
 
 """
